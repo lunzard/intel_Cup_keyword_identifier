@@ -17,7 +17,8 @@ ADDR2 = (SERVER, PORT_OUT)
 FORMAT = 'utf-8'
 DISCONNECT_MESSAGE = "!DISCONNECT"
 
-FILE_ADDR = 'command_list.txt'
+ACTION_COMMAND_ADDR = 'action_command_list.txt'
+ACTIVATE_COMMAND_ADDR = 'activate_command_list.txt'
 
 
 
@@ -96,11 +97,9 @@ def get_predictions(recorder, inputs):
 def check_sentence(sentence, commands, new_word):
     remaining_choices = []
     for i in sentence.choices:
-        print(new_word, (commands[i])[sentence.last_pos + 1])
         if new_word == (commands[i])[sentence.last_pos + 1]:
             remaining_choices.append(i)
-            print('is the same!')
-    print('remain_choices is ', remaining_choices)
+    # print('remain_choices is ', remaining_choices)
     return remaining_choices
 
 def compare_sentence(sentence):
@@ -116,17 +115,16 @@ def searcher(is_predict_start, new_predictions, sentences, commands):
         for j in sentences:
             rank = 1
             for i in new_predictions:
-                print('check choices: ', j.choices)               
+                # print('check choices: ', j.choices)               
                 # do forward checking
                 remaining_choices = check_sentence(j, commands, i)
-                if remaining_choices :
-                    print('there is remmaining choices of ',i, ' --> ', remaining_choices )
+                print('there is remmaining choices of ',i, ' --> ', remaining_choices )
+                if remaining_choices:
                     new_sentence = Sentence(j.priority,j.last_word, (j.choices).copy(), j.last_pos)
                     new_sentence.extend(i, rank, remaining_choices.copy())
                     new_sentences.append(copy.deepcopy(new_sentence))
                     rank += 1
-                else:
-                    print('remaining_choices become empty!: ',  i)
+
     else:
         is_predict_start = True
         rank = 1
@@ -177,15 +175,20 @@ def receive_predictions(queue_predictions, src_server):
     conn.close()
 
 # a Process that convert predictions into possible command indices
-def convert_predictions(queue_predictions, queue_commands, commands):
+def convert_predictions(queue_predictions, queue_commands, action_commands, activate_commands):
     # a flag that shows the start of prediction
     is_predict_start = False
+    # a flag that switch between activate_commands and action_commands
+    is_activate = False
     # a list of objects that keep track of possible predictions
     sentences = []
     recorder = Recorder()
-    # 2 seconds time limit to skip some words eg.'the' in the commands
-    time_lost_limit = 2 
-    is_predictoin_lost = False
+    # 3 seconds time limit to skip some words eg.'the' in the commands
+    time_lost_limit = 3
+    # 10 seconds time limit to stop action detection and switch back to activate detection
+    time_restart_limit = 10
+
+    is_prediction_lost = False
 
     connected = True
     while connected:
@@ -196,30 +199,74 @@ def convert_predictions(queue_predictions, queue_commands, commands):
             else:
                 words = get_predictions(recorder,prediction_msg)
                 if words:
-                    print('get predictions:', words)
-                    is_predict_start, top_n_sentences = searcher(is_predict_start,
-                     words, sentences, commands)
-                    # print('remaining choices: ', top_n_sentences[0].choices)
-                    if is_predict_start:
-                        if top_n_sentences:
-                            sentences = top_n_sentences
-                            possible_commands = show_possible_choices(top_n_sentences)
-                            # send commands indices to flutter
-                            queue_commands.put(possible_commands)
-                            is_predictoin_lost = False
-                        elif not is_predictoin_lost:
-                            time_lost_start = time.time()
-                            is_predictoin_lost = True
+                    # after activation voice is detected
+                    if is_activate:
+                        print('get action word:', words)
+                        is_predict_start, top_n_sentences = searcher(is_predict_start,
+                        words, sentences, action_commands)
+                        # print('remaining choices: ', top_n_sentences[0].choices)
+                        if is_predict_start:
+                            if top_n_sentences:
+                                sentences = top_n_sentences
+                                possible_commands = show_possible_choices(top_n_sentences)
+                                # send commands indices to flutter
+                                queue_commands.put(possible_commands)
+                                is_prediction_lost = False
+                            elif not is_prediction_lost:
+                                time_lost_start = time.time()
+                                is_prediction_lost = True
+                            else:
+                                time_lost = time.time() - time_lost_start
+                                if time_lost >= time_restart_limit:
+                                    is_activate = False
+                                    is_predict_start = False
+                                    is_prediction_lost = False
+                                    sentences = []
+                                elif time_lost >= time_lost_limit:
+                                    is_predict_start = False
+                                    is_prediction_lost = False
+                                    sentences = []
                         else:
-                            time_lost = time.time() - time_lost_start
-                            if time_lost >= time_lost_limit:
-                                is_predict_start = False
+                            sentences = []
+                            # reach the end
+                            if top_n_sentences:
+                                only_index = top_n_sentences[0].choices[0]
+                                # send the first index to flutter
+                                queue_commands.put(str(only_index))
+                                is_activate = False
+                    
+                    # before activation voice is detected
                     else:
-                        sentences = []
-                        if top_n_sentences:
-                            only_index = top_n_sentences[0].choices[0]
-                            # send the first index to flutter
-                            queue_commands.put(str(only_index))
+                        print('get activate word:', words)
+                        is_predict_start, top_n_sentences = searcher(is_predict_start,
+                        words, sentences, activate_commands)
+                        # print('remaining choices: ', top_n_sentences[0].choices)
+                        if is_predict_start:
+                            if top_n_sentences:
+                                sentences = top_n_sentences
+                                # '#_' is to differentiate action and activate commands for flutter app
+                                possible_commands = '#_' + show_possible_choices(top_n_sentences)
+                                # send commands indices to flutter
+                                queue_commands.put(possible_commands)
+                                is_prediction_lost = False
+                            elif not is_prediction_lost:
+                                time_lost_start = time.time()
+                                is_prediction_lost = True
+                            else:
+                                time_lost = time.time() - time_lost_start
+                                if time_lost >= time_lost_limit:
+                                    is_predict_start = False
+                                    is_prediction_lost = False
+                                    sentences = []
+                        else:
+                            sentences = []
+                            # reach the end
+                            if top_n_sentences:
+                                only_index = top_n_sentences[0].choices[0]
+                                # send the first index to flutter
+                                queue_commands.put(str(only_index))
+                                is_activate =True
+
 
 
         else:
@@ -241,7 +288,8 @@ def send_commands(queue_commands, dest_server):
 
 if __name__ == '__main__':
     print('is the main running')
-    commands =scan_commands(FILE_ADDR)
+    action_commands =scan_commands(ACTION_COMMAND_ADDR)
+    activate_commands =scan_commands(ACTIVATE_COMMAND_ADDR)
     queue_predictions = multiprocessing.Queue()
     queue_commands = multiprocessing.Queue()
     src_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -259,7 +307,7 @@ if __name__ == '__main__':
 
     
     p_send = multiprocessing.Process(target=send_commands, args=(queue_commands, dest_server))
-    p_convert = multiprocessing.Process(target=convert_predictions, args=(queue_predictions, queue_commands, commands))
+    p_convert = multiprocessing.Process(target=convert_predictions, args=(queue_predictions, queue_commands, action_commands, activate_commands))
     p_send.start()
     p_convert.start()
 

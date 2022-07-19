@@ -7,9 +7,23 @@ import threading
 
 from keras.models import load_model
 
-import os.path
+import socket
 
-model = load_model('mfcc.h5')
+################ comms ##################
+HEADER = 1024
+PORT = 5151
+FORMAT = 'utf-8'
+DISCONNECT_MESSAGE = "!DISCONNECT"
+SERVER = 'localhost'
+ADDR = (SERVER, PORT)
+
+def send(server, msg):
+    message = msg.encode(FORMAT)
+    server.send(message)
+    print("msg sent: ", message.decode(FORMAT))
+###############comms end ####################
+
+model = load_model("mfcc_yilun.h5")
 
 sample_rate = 16000
 sample_queue = deque([], maxlen=12000)
@@ -31,9 +45,6 @@ state_dict = {
     14: "Unknown"
 }
 
-# name of prediction log file
-global log_address
-log_address = "predictions.txt"
 
 class AudioHandler:
     def __init__(self, sr, queue):
@@ -62,49 +73,33 @@ class AudioHandler:
 def mic_data():
     audio = AudioHandler(sample_rate, sample_queue)
     audio.start()
-    audio.run_set_time(100.0)
+    audio.run_set_time(200.0)
     # audio.stop()
 
 
 def state_predict():
     while True:
-        # ps = np.array(sample_queue).reshape(22050,)
-        # print(any(np.isnan(ps)))
-        # sd.play(np.array(sample_queue).reshape(22050, ), sample_rate)
         ps = librosa.effects.preemphasis(np.array(sample_queue).reshape(12000, ))
-
-        # ps = librosa.feature.melspectrogram(y=ps, sr=sample_rate, n_mels=64,
-        #                                     fmin=0, fmax=8000)
-        # ps = librosa.amplitude_to_db(ps, ref=np.min)
         ps = librosa.feature.mfcc(y=ps, sr=sample_rate)
         q = model.predict(np.array([ps.reshape((20, 24, 1))]))
         # print(state_dict.get(int(np.argmax(q)), "NOT RECOGNIZED"))
 
         b = np.argsort(q[0], axis=0)
         if b[len(b) - 1]!= 0:
-            first_predict = state_dict.get(b[len(b) - 1], "NOT RECOGNIZED")
-            second_predict = state_dict.get(b[len(b) - 2], "NOT RECOGNIZED")
             # print(state_dict.get(b[len(b) - 1], "NOT RECOGNIZED"), state_dict.get(b[len(b) - 2], "NOT RECOGNIZED"))
-            print(first_predict, second_predict)
-            predict_log(first_predict + '_' + second_predict)
+            predict1 = state_dict.get(b[len(b) - 1], "NOT RECOGNIZED")
+            predict2 = state_dict.get(b[len(b) - 2], "NOT RECOGNIZED")
+            print(predict1, predict2)
+            msg = predict1 + ' ' + predict2
+            send(server, msg)
         time.sleep(0.1)
 
 
-# log the prediction
-def predict_log(prediction):
-    f = open(log_address, "a")
-    f.write(prediction + '\n')
-    f.close()
-    print('finish recording')
-
-
-
-
 if __name__ == "__main__":
-    # create empty log file
-    if os.path.exists(log_address):
-        os.remove(log_address)
-    f = open(log_address, "x")
+
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.connect(ADDR)
+
 
     # 0 idle, 1 Grenade   2 Shield    3 Reload     4 Logout
     x = threading.Thread(target=mic_data)
@@ -118,3 +113,4 @@ if __name__ == "__main__":
 
     x.join()
     y.join()
+    server.close()

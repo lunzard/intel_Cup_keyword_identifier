@@ -1,9 +1,0 @@
-what is the weather
-what is the day
-what is your name
-how is DQ
-time on
-lights on
-time off
-lights off
-is the weather good
