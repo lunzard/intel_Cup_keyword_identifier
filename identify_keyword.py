@@ -264,7 +264,7 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
                             if top_n_sentences:
                                 only_index = top_n_sentences[0].choices[0]
                                 # send the first index to flutter
-                                queue_commands.put(str(only_index))
+                                queue_commands.put('#_' + str(only_index))
                                 is_activate =True
 
 
