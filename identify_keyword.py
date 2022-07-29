@@ -313,7 +313,8 @@ if __name__ == '__main__':
 
     is_alive = True
     while is_alive:
-        user_command = input("send <logout> if you want to quit the program")
+        # user_command = input("send <logout> if you want to quit the program")
+        user_command = ''
         if user_command == 'logout':
             print('now closing identify_keyword.py ...')
             # time.sleep(5)
