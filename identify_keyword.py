@@ -87,6 +87,8 @@ def scan_commands(file_address):
 
 def get_predictions(recorder, inputs):
     words = inputs.split(' ')
+    if words[0].lower() == "background":
+        return None
     if recorder.repeaters:
         recorder.add_words(words)
         return recorder.check_keyword()
@@ -289,8 +291,6 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
                                 # send commands indices to flutter
                                 queue_commands.put('#_'+ possible_commands)
                                 is_activate =True
-
-
 
         else:
             time.sleep(0.2)
