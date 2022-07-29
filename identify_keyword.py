@@ -25,7 +25,7 @@ ACTIVATE_COMMAND_ADDR = 'activate_command_list.txt'
 class Recorder:
     def __init__(self):
         self.repeaters = {}
-        self.repeat_limit = 3 # consecutive word limit
+        self.repeat_limit = 2 # consecutive word limit
     def add_words(self, words):
         new_repeaters = {}
         for word in words:
@@ -118,7 +118,7 @@ def searcher(is_predict_start, new_predictions, sentences, commands):
                 # print('check choices: ', j.choices)               
                 # do forward checking
                 remaining_choices = check_sentence(j, commands, i)
-                print('there is remmaining choices of ',i, ' --> ', remaining_choices )
+                # print('there is remmaining choices of ',i, ' --> ', remaining_choices )
                 if remaining_choices:
                     new_sentence = Sentence(j.priority,j.last_word, (j.choices).copy(), j.last_pos)
                     new_sentence.extend(i, rank, remaining_choices.copy())
@@ -158,6 +158,20 @@ def show_possible_choices(top_n_sentences):
             choices_string += " "
     return choices_string
 
+def show_sentence_progress(top_n_sentences, commands):
+    first_sentence = top_n_sentences[0]
+    first_choice_index = first_sentence.choices[0]
+    command_1 = commands[first_choice_index]
+    command_content = command_1[:first_sentence.last_pos + 1]
+    progress_string = ""
+    for word in command_content:
+        progress_string += word
+        progress_string += " "
+    return progress_string
+
+
+
+
 
 # communication with ai_prediction script
 # a Process that runs in a loop
@@ -183,10 +197,10 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
     # a list of objects that keep track of possible predictions
     sentences = []
     recorder = Recorder()
-    # 3 seconds time limit to skip some words eg.'the' in the commands
-    time_lost_limit = 3
+    # 1.5 seconds time limit to skip some words eg.'the' in the commands
+    time_lost_limit = 1.5
     # 10 seconds time limit to stop action detection and switch back to activate detection
-    time_restart_limit = 10
+    time_restart_limit = 5
 
     is_prediction_lost = False
 
@@ -208,7 +222,8 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
                         if is_predict_start:
                             if top_n_sentences:
                                 sentences = top_n_sentences
-                                possible_commands = show_possible_choices(top_n_sentences)
+                                # possible_commands = show_possible_choices(top_n_sentences)
+                                possible_commands = show_sentence_progress(top_n_sentences)
                                 # send commands indices to flutter
                                 queue_commands.put(possible_commands)
                                 is_prediction_lost = False
@@ -230,9 +245,13 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
                             sentences = []
                             # reach the end
                             if top_n_sentences:
-                                only_index = top_n_sentences[0].choices[0]
+                                # only_index = top_n_sentences[0].choices[0]
                                 # send the first index to flutter
-                                queue_commands.put(str(only_index))
+                                # queue_commands.put(str(only_index))
+                                possible_commands = show_sentence_progress(top_n_sentences)
+                                # send commands indices to flutter
+                                queue_commands.put(possible_commands)
+
                                 is_activate = False
                     
                     # before activation voice is detected
@@ -245,7 +264,8 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
                             if top_n_sentences:
                                 sentences = top_n_sentences
                                 # '#_' is to differentiate action and activate commands for flutter app
-                                possible_commands = '#_' + show_possible_choices(top_n_sentences)
+                                # possible_commands = '#_' + show_possible_choices(top_n_sentences)
+                                possible_commands = '#_' + show_sentence_progress(top_n_sentences)
                                 # send commands indices to flutter
                                 queue_commands.put(possible_commands)
                                 is_prediction_lost = False
@@ -262,9 +282,12 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
                             sentences = []
                             # reach the end
                             if top_n_sentences:
-                                only_index = top_n_sentences[0].choices[0]
+                                # only_index = top_n_sentences[0].choices[0]
                                 # send the first index to flutter
-                                queue_commands.put('#_' + str(only_index))
+                                # queue_commands.put('#_' + str(only_index))
+                                possible_commands = show_sentence_progress(top_n_sentences)
+                                # send commands indices to flutter
+                                queue_commands.put('#_'+ possible_commands)
                                 is_activate =True
 
 
