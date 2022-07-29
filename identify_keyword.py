@@ -225,7 +225,7 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
                             if top_n_sentences:
                                 sentences = top_n_sentences
                                 # possible_commands = show_possible_choices(top_n_sentences)
-                                possible_commands = show_sentence_progress(top_n_sentences)
+                                possible_commands = show_sentence_progress(top_n_sentences, action_commands)
                                 # send commands indices to flutter
                                 queue_commands.put(possible_commands)
                                 is_prediction_lost = False
@@ -250,7 +250,7 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
                                 # only_index = top_n_sentences[0].choices[0]
                                 # send the first index to flutter
                                 # queue_commands.put(str(only_index))
-                                possible_commands = show_sentence_progress(top_n_sentences)
+                                possible_commands = show_sentence_progress(top_n_sentences, action_commands)
                                 # send commands indices to flutter
                                 queue_commands.put(possible_commands)
 
@@ -267,7 +267,7 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
                                 sentences = top_n_sentences
                                 # '#_' is to differentiate action and activate commands for flutter app
                                 # possible_commands = '#_' + show_possible_choices(top_n_sentences)
-                                possible_commands = '#_' + show_sentence_progress(top_n_sentences)
+                                possible_commands = '#_' + show_sentence_progress(top_n_sentences, activate_commands)
                                 # send commands indices to flutter
                                 queue_commands.put(possible_commands)
                                 is_prediction_lost = False
@@ -287,7 +287,7 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
                                 # only_index = top_n_sentences[0].choices[0]
                                 # send the first index to flutter
                                 # queue_commands.put('#_' + str(only_index))
-                                possible_commands = show_sentence_progress(top_n_sentences)
+                                possible_commands = show_sentence_progress(top_n_sentences, activate_commands)
                                 # send commands indices to flutter
                                 queue_commands.put('#_'+ possible_commands)
                                 is_activate =True
