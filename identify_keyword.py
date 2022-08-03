@@ -28,29 +28,35 @@ class Recorder:
         self.repeat_limit = 2 # consecutive word limit
     def add_words(self, words):
         new_repeaters = {}
+        priority = self.repeat_limit
         for word in words:
             has_repeater = False
             for repeater in self.repeaters.keys():
                 if word == repeater:
-                    new_repeaters[repeater] = self.repeaters[repeater] + 1
+                    new_repeaters[repeater] = (self.repeaters[repeater][0] + 1, self.repeaters[repeater][1])
+                    new_repeaters[repeater][1] -= priority
                     has_repeater = True
                     break
             if not has_repeater:
-                new_repeaters[word] = 1
+                new_repeaters[word] = (1, priority)
+            priority += 1
         self.repeaters = new_repeaters
     def create_words(self,words):
+        priority = self.repeat_limit
         for word in words:
-            self.repeaters[word] = 1
+            self.repeaters[word] = (1, priority)
+            priority -=1
     def check_keyword(self):
         remain_repeaters = {}
         keywords =[]
         for repeater in self.repeaters.keys():
-            repeat_time = self.repeaters[repeater]
+            repeat_time = self.repeaters[repeater][0]
+            priority = self.repeaters[repeater][1]
             # if repeat more than 3 times
-            if repeat_time >= self.repeat_limit:
+            if repeat_time >= self.repeat_limit and priority >= repeat_time:
                 keywords.append(repeater)
             else:
-                remain_repeaters[repeater] = repeat_time
+                remain_repeaters[repeater] = (repeat_time, priority)
         self.repeaters = remain_repeaters
         return keywords
 
@@ -181,18 +187,13 @@ def receive_predictions(queue_predictions, src_server):
     conn, addr = src_server.accept()
     connected = True
     while connected:
-        # try:
-        #     msg =conn.recv(HEADER).decode(FORMAT)
-        #     if msg == DISCONNECT_MESSAGE:
-        #         connected = False
-        #     queue_predictions.put(msg)
-        # except:
-        #     time.sleep(0.2)
-        if conn.poll():
+        try:
             msg =conn.recv(HEADER).decode(FORMAT)
             if msg == DISCONNECT_MESSAGE:
                 connected = False
             queue_predictions.put(msg)
+        except:
+            time.sleep(0.2)
     conn.close()
 
 # a Process that convert predictions into possible command indices
@@ -248,6 +249,7 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
                                     is_predict_start = False
                                     is_prediction_lost = False
                                     sentences = []
+                                    queue_commands.put('$_timeout_$')
                         else:
                             sentences = []
                             # reach the end
@@ -270,7 +272,7 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
                                     if time_clear_now - time_clear_start >= 2:
                                         is_clear = True
                                     queue_predictions.get()
-                                    time.sleep(0.5)
+                                    # time.sleep(0.5)
                     
                     # before activation voice is detected
                     else:
@@ -296,6 +298,7 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
                                     is_predict_start = False
                                     is_prediction_lost = False
                                     sentences = []
+                                    queue_commands.put('$_timeout_$')
                         else:
                             sentences = []
                             # reach the end
@@ -313,10 +316,10 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
                                 time_clear_start = time.time()
                                 while not is_clear:
                                     time_clear_now = time.time()
-                                    if time_clear_now - time_clear_start >= 4:
+                                    if time_clear_now - time_clear_start >= 2:
                                         is_clear = True
                                     queue_predictions.get()
-                                    time.sleep(0.5)
+                                    # time.sleep(0.5)
 
         else:
             time.sleep(0.2)
