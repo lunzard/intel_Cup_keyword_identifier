@@ -55,6 +55,7 @@ class Recorder:
             # if repeat more than 3 times
             if repeat_time >= self.repeat_limit and priority > repeat_time:
                 keywords.append(repeater)
+                print(repeater, ' has repeat ', repeat_time, ' and priorty ', priority )
             else:
                 remain_repeaters[repeater] = [repeat_time, priority]
         self.repeaters = remain_repeaters
