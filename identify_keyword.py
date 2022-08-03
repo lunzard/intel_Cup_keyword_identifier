@@ -34,12 +34,12 @@ class Recorder:
             for repeater in self.repeaters.keys():
                 if word == repeater:
                     new_repeaters[repeater] = [self.repeaters[repeater][0] + 1, self.repeaters[repeater][1]]
-                    new_repeaters[repeater][1] -= priority
+                    new_repeaters[repeater][1] += priority
                     has_repeater = True
                     break
             if not has_repeater:
                 new_repeaters[word] = [1, priority]
-            priority += 1
+            priority -= 1
         self.repeaters = new_repeaters
     def create_words(self,words):
         priority = self.repeat_limit
