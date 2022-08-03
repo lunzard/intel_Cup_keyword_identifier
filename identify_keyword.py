@@ -255,6 +255,10 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
                                 queue_commands.put(possible_commands + '_#')
 
                                 is_activate = False
+                                # empty the inferences for 1.5 seconds
+                                queue_commands.put('$_' + 'okay' + '_$')
+                                time.sleep(2)
+                                queue_commands.clear()
                     
                     # before activation voice is detected
                     else:
@@ -291,6 +295,10 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
                                 # send commands indices to flutter
                                 queue_commands.put('#_'+ possible_commands + '_#')
                                 is_activate =True
+                                # empty the inferences for 1.5 seconds
+                                queue_commands.put('$_' + 'Hi what can I help you' + '_$')
+                                time.sleep(4)
+                                queue_commands.clear()
 
         else:
             time.sleep(0.2)
