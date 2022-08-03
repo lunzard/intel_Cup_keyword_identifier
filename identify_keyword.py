@@ -181,13 +181,18 @@ def receive_predictions(queue_predictions, src_server):
     conn, addr = src_server.accept()
     connected = True
     while connected:
-        try:
+        # try:
+        #     msg =conn.recv(HEADER).decode(FORMAT)
+        #     if msg == DISCONNECT_MESSAGE:
+        #         connected = False
+        #     queue_predictions.put(msg)
+        # except:
+        #     time.sleep(0.2)
+        if conn.poll():
             msg =conn.recv(HEADER).decode(FORMAT)
             if msg == DISCONNECT_MESSAGE:
                 connected = False
             queue_predictions.put(msg)
-        except:
-            time.sleep(0.2)
     conn.close()
 
 # a Process that convert predictions into possible command indices
