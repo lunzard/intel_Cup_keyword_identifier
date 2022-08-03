@@ -256,7 +256,7 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
 
                                 is_activate = False
                                 # empty the inferences for 1.5 seconds
-                                queue_commands.put('$_' + 'okay' + '_$')
+                                # queue_commands.put('$_' + 'okay' + '_$')
                                 time.sleep(2)
                                 queue_commands.clear()
                     
@@ -296,7 +296,7 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
                                 queue_commands.put('#_'+ possible_commands + '_#')
                                 is_activate =True
                                 # empty the inferences for 1.5 seconds
-                                queue_commands.put('$_' + 'Hi what can I help you' + '_$')
+                                # queue_commands.put('$_' + 'Hi what can I help you' + '_$')
                                 time.sleep(4)
                                 queue_commands.clear()
 
