@@ -210,7 +210,7 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
     sentences = []
     recorder = Recorder()
     # 1.5 seconds time limit to skip some words eg.'the' in the commands
-    time_lost_limit = 1
+    time_lost_limit = 1.5
     # 10 seconds time limit to stop action detection and switch back to activate detection
     time_restart_limit = 3.5
 
