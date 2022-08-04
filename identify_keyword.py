@@ -270,7 +270,7 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
                                 time_clear_start = time.time()
                                 while not is_clear:
                                     time_clear_now = time.time()
-                                    if time_clear_now - time_clear_start >= 2:
+                                    if time_clear_now - time_clear_start >= 0.5:
                                         is_clear = True
                                     queue_predictions.get()
                                     # time.sleep(0.5)
@@ -317,7 +317,7 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
                                 time_clear_start = time.time()
                                 while not is_clear:
                                     time_clear_now = time.time()
-                                    if time_clear_now - time_clear_start >= 2:
+                                    if time_clear_now - time_clear_start >= 0.5:
                                         is_clear = True
                                     queue_predictions.get()
                                     # time.sleep(0.5)
