@@ -246,11 +246,11 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
                                     is_predict_start = False
                                     is_prediction_lost = False
                                     sentences = []
+                                    queue_commands.put('$_timeout_$')
                                 elif time_lost >= time_lost_limit:
                                     is_predict_start = False
                                     is_prediction_lost = False
                                     sentences = []
-                                    queue_commands.put('$_timeout_$')
                         else:
                             sentences = []
                             # reach the end
