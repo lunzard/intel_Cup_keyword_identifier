@@ -217,6 +217,7 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
     is_prediction_lost = False
 
     connected = True
+    is_waiting_action = False
     while connected:
         if not queue_predictions.empty():
             prediction_msg = queue_predictions.get()
@@ -225,6 +226,7 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
             else:
                 words = get_predictions(recorder,prediction_msg)
                 if words:
+                    is_waiting_action = False
                     # after activation voice is detected
                     if is_activate:
                         print('get action word:', words)
@@ -277,7 +279,6 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
                                         is_clear = True
                                     queue_predictions.get()
                                     # time.sleep(0.5)
-                    
                     # before activation voice is detected
                     else:
                         print('get activate word:', words)
@@ -324,6 +325,18 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
                                         is_clear = True
                                     queue_predictions.get()
                                     # time.sleep(0.5)
+                elif is_activate :
+                    if is_waiting_action:
+                        waiting_time = time.time() - time_wait_start
+                        if waiting_time >= 4:
+                            is_predict_start = False
+                            is_prediction_lost = False
+                            sentences = []
+                            queue_commands.put('$_timeout_$')
+                    else:
+                        is_waiting_action = True
+                        time_wait_start = time.time()
+
 
         else:
             time.sleep(0.2)
