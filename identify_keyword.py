@@ -332,6 +332,7 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
                             is_predict_start = False
                             is_prediction_lost = False
                             is_waiting_action = False
+                            is_activate = False
                             sentences = []
                             queue_commands.put('$_timeout_$')
                     else:
