@@ -279,6 +279,20 @@ def convert_predictions(queue_predictions, queue_commands, action_commands, acti
                                         is_clear = True
                                     queue_predictions.get()
                                     # time.sleep(0.5)
+                            else:
+                                if is_waiting_action:
+                                    waiting_time = time.time() - time_wait_start
+                                    if waiting_time >= 4:
+                                        is_predict_start = False
+                                        is_prediction_lost = False
+                                        is_waiting_action = False
+                                        is_activate = False
+                                        sentences = []
+                                        queue_commands.put('$_timeout_$')
+                                else:
+                                    is_waiting_action = True
+                                    time_wait_start = time.time()
+
                     # before activation voice is detected
                     else:
                         print('get activate word:', words)
