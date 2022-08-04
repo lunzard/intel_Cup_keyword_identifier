@@ -178,7 +178,7 @@ def show_sentence_progress(top_n_sentences, commands):
             progress_string += word
             progress_string += " "
         progress_string += "/ "
-        progress_string = progress_string[:-1]
+    progress_string = progress_string[:-1]
     return progress_string
 
 
