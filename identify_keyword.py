@@ -169,16 +169,16 @@ def show_possible_choices(top_n_sentences):
 
 def show_sentence_progress(top_n_sentences, commands):
     # first_sentence = top_n_sentences[0]
+    progress_string = ""
     for sentence in top_n_sentences:
         first_choice_index = sentence.choices[0]
         command_1 = commands[first_choice_index]
         command_content = command_1[:sentence.last_pos + 1]
-        progress_string = ""
         for word in command_content:
             progress_string += word
             progress_string += " "
-        progress_string += "/ "
-    progress_string = progress_string[:-1]
+        progress_string += "/"
+    progress_string = progress_string[:-2]
     return progress_string
 
 
